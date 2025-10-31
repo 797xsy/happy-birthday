@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Glowing Heart with Centered Particle Text</title>
+<script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js"></script>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: radial-gradient(circle at center, #120014 0%, #000 100%);
+  }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+
+<script>
+let heartOutline = [];
+let heartInner = [];
+let textParticles = [];
+let pulse = 0;
+let font;
+
+function preload() {
+  font = loadFont('https://fonts.gstatic.com/s/lobster/v30/neILzCirqoswsqX9_oWsMqEzSJQ.ttf');
+}
+
+function setup() {
+  createCanvas(windowWidth, windowHeight);
+  noStroke();
+  textFont(font);
+
+  // 爱心粒子
+  for (let i = 0; i < 1000; i++) heartOutline.push(new HeartParticle(true));
+  for (let i = 0; i < 1500; i++) heartInner.push(new HeartParticle(false));
+
+  // 文字粒子
+  let txt = "Happy Birthday";
+  let fontSize = min(width, height) / 6;
+  let bounds = font.textBounds(txt, 0, 0, fontSize);
+  let x = width / 2 - bounds.w / 2;
+  let y = height * 0.9; // 🔹 往下移一点
+  let points = font.textToPoints(txt, x, y, fontSize, { sampleFactor: 0.15 });
+
+  for (let p of points) {
+    textParticles.push(new TextParticle(p.x, p.y));
+  }
+}
+
+function draw() {
+  background(0, 0, 0, 30);
+  pulse = 1 + 0.04 * sin(frameCount * 0.05);
+  for (let p of heartInner) { p.update(pulse); p.show(); }
+  for (let p of heartOutline) { p.update(pulse); p.show(); }
+  for (let p of textParticles) { p.update(); p.show(); }
+}
+
+function heartFunction(t) {
+  let x = 16 * pow(sin(t), 3);
+  let y = 13 * cos(t) - 5 * cos(2 * t) - 2 * cos(3 * t) - cos(4 * t);
+  return createVector(x, -y);
+}
+
+class HeartParticle {
+  constructor(isOutline) {
+    this.isOutline = isOutline;
+    this.t = random(TWO_PI);
+    this.base = heartFunction(this.t);
+    this.offset = isOutline ? random(0.9, 1.1) : random(0.2, 0.8);
+    this.pos = this.base.copy().mult(this.offset);
+    this.vel = p5.Vector.random2D().mult(random(0.1, 0.3));
+    this.size = isOutline ? random(2, 3.5) : random(1, 2.5);
+    this.alpha = random(150, 255);
+  }
+  update(pulse) {
+    // 缩小爱心比例
+    let scaleFactor = min(width, height) / 45;
+    let target = heartFunction(this.t).mult(scaleFactor * this.offset * pulse);
+    this.pos.lerp(target, 0.05);
+    this.vel.add(p5.Vector.random2D().mult(0.05));
+    this.pos.add(this.vel);
+    this.vel.mult(0.9);
+  }
+  show() {
+    let glow = color(255, 120 + random(-10, 20), 220 + random(-10, 20), this.alpha);
+    fill(glow);
+    // 🔹 爱心往上移动
+    ellipse(width/2 + this.pos.x, height/2 + this.pos.y - 120, this.size);
+  }
+}
+
+class TextParticle {
+  constructor(x, y) {
+    this.origin = createVector(x, y);
+    this.pos = this.origin.copy().add(p5.Vector.random2D().mult(random(10)));
+    this.vel = p5.Vector.random2D().mult(random(0.5));
+    this.size = random(2, 3);
+    this.alpha = random(180, 255);
+  }
+  update() {
+    this.pos.lerp(this.origin, 0.08);
+    this.vel.add(p5.Vector.random2D().mult(0.02));
+    this.pos.add(this.vel);
+    this.vel.mult(0.9);
+  }
+  show() {
+    let glow = color(255, 130 + random(-10, 15), 240 + random(-10, 15), this.alpha);
+    fill(glow);
+    ellipse(this.pos.x, this.pos.y, this.size);
+  }
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+}
+</script>
+
+</body>
+</html>
